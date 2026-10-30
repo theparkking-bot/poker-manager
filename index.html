@@ -141,6 +141,35 @@ button.stage-current{background:#e9bd62;color:#1a2017;border-color:#f0ce85;font-
 .stage-duration-grid>div>label{min-height:2.8em;display:flex;align-items:flex-end;margin-bottom:6px;line-height:1.25}
 .stage-duration-grid>div>input{margin-top:auto}
 @media(max-width:410px){.hero .hero-side-controls .speak-blinds{top:auto!important;bottom:7px!important;left:5px!important}.hero .hero-side-controls .decision-side{width:110px!important}}
+
+/* PM 0.4.0: side-mounted decision button; compact mobile first-screen controls */
+.hero .hero-side-controls{position:absolute!important;inset:0!important;display:block!important;transform:none!important;margin:0!important;pointer-events:none!important;z-index:2}
+.hero .hero-side-controls .decision-side{position:absolute!important;top:52%!important;right:7px!important;left:auto!important;bottom:auto!important;transform:translateY(-50%)!important;width:64px!important;height:54px!important;min-height:54px!important;padding:4px 2px!important;font-size:.88rem!important;pointer-events:auto!important;order:unset!important}
+.hero .hero-side-controls .speak-blinds{position:absolute!important;left:8px!important;bottom:8px!important;top:auto!important;right:auto!important;transform:none!important;pointer-events:auto!important}
+.hero .late-last-notice{max-width:calc(100% - 76px)!important;width:auto!important;margin:5px auto 0 0!important;padding:5px 4px!important;font-size:.7rem!important;line-height:1.2!important}
+@media(max-width:599px){
+ .wrap{padding:7px 10px 90px}
+ .tournament-main{min-height:0!important}
+ .tournament-main .tournament-title{margin-bottom:2px!important;font-size:.95rem}
+ .tournament-main .hero{padding:9px 7px 8px!important;margin:5px 0!important}
+ .tournament-main .hero .blinds{font-size:clamp(2.9rem,12vw,5.8rem)!important;line-height:1.05!important}
+ .tournament-main .hero .clock{font-size:clamp(3.3rem,14vw,6rem)!important;line-height:1.07!important}
+ .tournament-main .hero .progress{margin:5px 10px!important;height:4px!important}
+ .tournament-main .grid{gap:5px}
+ .tournament-main .stat{padding:5px 2px!important;min-height:52px!important}
+ .tournament-main .stat b{font-size:.88rem;margin-top:2px}
+ .tournament-main .key-actions{margin-top:5px!important}
+ .tournament-main .key-actions .main-pause{min-height:62px!important;padding:8px!important;font-size:1.12rem!important}
+ .tournament-main .player-actions{margin-top:5px!important;gap:5px!important}
+ .tournament-main .player-actions>button:nth-child(-n+2){min-height:64px!important;padding:8px 5px!important;font-size:1.05rem!important}
+ .tournament-main .player-actions>.addon-compact button,.tournament-main .player-actions>.quick-break~button{min-height:43px!important;padding:5px 2px!important;font-size:.75rem!important}
+ .tournament-main .minute-actions{margin-top:5px!important;gap:4px!important}
+ .tournament-main .minute-actions button{min-height:45px!important;padding:4px 2px!important;font-size:.69rem!important;line-height:1.15!important}
+ .tournament-main .upcoming-section{margin-top:9px!important;padding-top:4px!important}
+ .tournament-main .upcoming-section .section{margin:5px 0!important}
+ .tournament-main .upcoming-card{margin-top:12px!important}
+}
+@media(max-width:360px){.hero .hero-side-controls .decision-side{width:53px!important;height:49px!important;min-height:49px!important;font-size:.75rem!important}.hero .late-last-notice{max-width:calc(100% - 60px)!important}}
 </style></head><body><div id="app"></div><script>
 const KEY='poker_manager_1_0_v1';let db;try{db=JSON.parse(localStorage.getItem(KEY))||{tournaments:[],profiles:[],selected:null}}catch{db={tournaments:[],profiles:[],selected:null}};
 let toastTimer=null;let creatingTournament=false;let tab='tournament',modal=null,screen=false,decisionEnd=0,decisionOwner=null,decisionTick=0,notification='',currentSearch='',playerFilter='active';
@@ -227,7 +256,7 @@ function percentages(x){return x.payouts.length===x.paidPlaces?x.payouts:presets
 function prizes(x){let p=percentages(x),pool=net(x);return `<h2>Призовые и выплаты</h2><div class="grid"><div class="stat"><span class="tiny">Общий банк</span><b>${money(gross(x))}</b></div><div class="stat clickable" role="button" tabindex="0" onclick="openModal('dealer')" onkeydown="if(event.key==='Enter')openModal('dealer')"><span class="tiny">Дилерам ${x.dealerPct}% ✎</span><b>${money(gross(x)-pool)}</b></div><div class="stat"><span class="tiny">Игрокам</span><b>${money(pool)}</b></div></div><div class="card"><div class="row between"><b>Призовых мест: ${x.paidPlaces}</b>${btn('Настроить',"openModal('prizes')",'smallbtn')}</div><table><tr><th>Место</th><th>Доля</th><th>Сумма</th><th>Выплата</th></tr>${p.map((pct,i)=>{let player=x.players.find(z=>z.place===i+1);return `<tr><td>${i+1}${x.bubblePlace&&i===x.paidPlaces-1?' · Бабл':''}${player?' · '+esc(player.name):''}</td><td>${pct}%</td><td>${money(pool*pct/100)}</td><td>${player?`${money(player.payoutPaid||0)} ${btn('＋',`openModal('pay','${player.id}')`,'smallbtn')}`:'—'}</td></tr>`}).join('')}</table><p class="hint">До завершения аддонов суммы предварительные. Долги по взносам: ${money(gross(x)-received(x))}.</p></div><div class="actions">${btn('ICM / Делёжка',"openModal('icm')")}${btn('Завершить турнир',"finish()",'primary')}</div>`}
 function history(x){return `<h2>История и заметки</h2><div class="card"><label>Заметки организатора</label><textarea rows="4" onblur="saveNotes(this.value)">${esc(x.notes)}</textarea></div><div class="card"><h3>Журнал действий</h3><div class="list">${x.events.map(e=>`<div class="item"><span class="tiny">${new Date(e.at).toLocaleString('ru-RU')}</span><div>${esc(e.msg)}</div></div>`).join('')||'<p class="muted">Пока нет событий.</p>'}</div></div>`}
 function more(x){return `<h2>Управление</h2><div class="list">${[['Турниры',"db.selected=null;render()"],['＋ Новый турнир',"openModal('create')"],['Параметры турнира',"openModal('settings')"],['🔊 Проверка звука',"openModal('soundtest')"],['Структура блайндов',"openModal('levels')"],['Управление стадиями',"openModal('stages')"],['Столы и рассадка',"openModal('seating')"],['Отменить последнее действие',"undo()"],['Экспорт резервной копии',"exportBackup()"],['Импорт резервной копии',"$('importFile').click()"],['Поддержать проект',"openModal('support')"]].map(([a,b])=>btn(a,b)).join('')}</div><input type="file" accept="application/json" id="importFile" style="display:none" onchange="importBackup(this.files[0])"><div class="card"><b>Архив турниров</b><div class="list">${db.tournaments.filter(z=>z.archived||z.status==='finished').map(z=>`<div class="item row between">${esc(z.name)} ${btn('Открыть',`db.selected='${z.id}';tab='tournament';render();try{localStorage.setItem(KEY,JSON.stringify(db))}catch(e){}`,'smallbtn')}</div>`).join('')||'<p class="muted">Пока пусто.</p>'}</div></div><p class="hint">Данные хранятся только в этом браузере. Регулярно экспортируйте резервную копию.</p>`}
-function render(){sync();let x=t();$('app').innerHTML=screen&&x?`<div class="fullscreen"><div class="screen"><div class="row between"><span class="brand">${esc(x.name)}</span>${btn('✕',"screen=false;render()",'ghost')}</div><div class="muted" style="margin-top:25px">УРОВЕНЬ ${x.level+1}</div>${levelHtml(x)}<div class="muted">В игре: ${active(x)} · ${esc(eventText(x))}</div></div></div>`:`<main class="wrap"><div class="top"><div><div class="brand">♠ Poker Manager <span style="font:12px system-ui;color:#d9c690">1.0 · сборка 0.3.9</span></div><div class="sub">by theparkking</div></div>${x?btn('⌄ '+esc(x.name),"db.selected=null;render()",'smallbtn'):''}</div>${notification?`<div class="card gold">${esc(notification)}</div>`:''}${x?tab==='tournament'?tournament(x):tab==='players'?players(x):tab==='prizes'?prizes(x):tab==='history'?history(x):more(x):home()}${x?nav():''}</main>`;if(modal)renderModal()}
+function render(){sync();let x=t();$('app').innerHTML=screen&&x?`<div class="fullscreen"><div class="screen"><div class="row between"><span class="brand">${esc(x.name)}</span>${btn('✕',"screen=false;render()",'ghost')}</div><div class="muted" style="margin-top:25px">УРОВЕНЬ ${x.level+1}</div>${levelHtml(x)}<div class="muted">В игре: ${active(x)} · ${esc(eventText(x))}</div></div></div>`:`<main class="wrap"><div class="top"><div><div class="brand">♠ Poker Manager <span style="font:12px system-ui;color:#d9c690">1.0 · сборка 0.4.1</span></div><div class="sub">by theparkking</div></div>${x?btn('⌄ '+esc(x.name),"db.selected=null;render()",'smallbtn'):''}</div>${notification?`<div class="card gold">${esc(notification)}</div>`:''}${x?tab==='tournament'?tournament(x):tab==='players'?players(x):tab==='prizes'?prizes(x):tab==='history'?history(x):more(x):home()}${x?nav():''}</main>`;if(modal)renderModal()}
 function openModal(name,extra){modal={name,extra};renderModal()};function closeModal(){modal=null;document.getElementById('modalRoot')?.remove();render()}
 function formModal(title,body,buttons=''){let el=document.createElement('div');el.className='modalwrap';el.id='modalRoot';el.addEventListener('click',event=>{if(!event.target.closest('.modal'))closeModal()});el.innerHTML=`<div class="modal"><div class="row between"><h2>${title}</h2>${btn('✕',"closeModal()",'ghost')}</div>${body}${buttons}</div>`;document.body.appendChild(el)}
 function durationFor(x,stage){return Math.max(1,Number(x.stageMinutes?.[stage])||({late:18,main:15,final:12}[stage]||15))}
@@ -381,11 +410,38 @@ function speakRussian(message){
  }
  try{window.speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(message);u.lang='ru-RU';u.rate=.95;u.volume=1;window.speechSynthesis.speak(u);return true}catch(e){showToast('Не удалось воспроизвести голос',true);return false}
 }
-function speakCurrentBlinds(){const x=t();if(!x)return;if(x.voiceBlinds===false){showToast('Озвучка блайндов выключена в настройках');return}const l=x.levels[x.level];if(l)speakRussian('Блайнды '+l.sb+' '+l.bb)}
+// Convert blinds to Russian words to prevent Android TTS from reading 75 as '75 thousand'.
+function blindNumberWords(value){
+ const n=Number(value);
+ if(!Number.isSafeInteger(n)||n<0||n>=1e12)return String(value);
+ if(n===0)return 'ноль';
+ const ones=['','один','два','три','четыре','пять','шесть','семь','восемь','девять'];
+ const female=['','одна','две','три','четыре','пять','шесть','семь','восемь','девять'];
+ const teens=['десять','одиннадцать','двенадцать','тринадцать','четырнадцать','пятнадцать','шестнадцать','семнадцать','восемнадцать','девятнадцать'];
+ const tens=['','','двадцать','тридцать','сорок','пятьдесят','шестьдесят','семьдесят','восемьдесят','девяносто'];
+ const hundreds=['','сто','двести','триста','четыреста','пятьсот','шестьсот','семьсот','восемьсот','девятьсот'];
+ function chunk(k,isFemale){
+  const words=[];const h=Math.floor(k/100),t=Math.floor(k%100/10),u=k%10;
+  if(h)words.push(hundreds[h]);
+  if(t===1)words.push(teens[u]);else{if(t)words.push(tens[t]);if(u)words.push((isFemale?female:ones)[u]);}
+  return words;
+ }
+ function magnitude(k,forms){const m=k%100;const d=k%10;return forms[(m>=11&&m<=14)?2:d===1?0:d>=2&&d<=4?1:2]}
+ let remainder=n;const result=[];
+ const billions=Math.floor(remainder/1e9);remainder%=1e9;
+ const millions=Math.floor(remainder/1e6);remainder%=1e6;
+ const thousands=Math.floor(remainder/1000);remainder%=1000;
+ if(billions)result.push(...chunk(billions,false),magnitude(billions,['миллиард','миллиарда','миллиардов']));
+ if(millions)result.push(...chunk(millions,false),magnitude(millions,['миллион','миллиона','миллионов']));
+ if(thousands)result.push(...chunk(thousands,true),magnitude(thousands,['тысяча','тысячи','тысяч']));
+ if(remainder)result.push(...chunk(remainder,false));
+ return result.join(' ');
+}
+function speakCurrentBlinds(){const x=t();if(!x)return;if(x.voiceBlinds===false){showToast('Озвучка блайндов выключена в настройках');return}const l=x.levels[x.level];if(l)speakRussian('Блайнды '+blindNumberWords(l.sb)+' '+blindNumberWords(l.bb))}
 function testTickSound(){decisionTone(520,.025,.05);setTimeout(()=>decisionTone(520,.025,.05),400);setTimeout(()=>decisionTone(780,.045,.13),850)}
 function saveTournamentName(){const name=(val('renameName')||'').trim();if(!name)return alert('Введите название турнира');act(x=>{x.name=name;log(x,'Название турнира изменено')});closeModal()}
 function testSpeech(){speakRussian('Проверка звука. Озвучка включена.')}
-function testJoke(i){const phrases=['Мешок рыжая паскуда сейчас вылетит и поедет домой','Андрюха, ну покер реально же хуйня, скажи?','Ходи уже, заебал!','Мушегу фишки не отдавайте, пожалуйста, вы чё угораете','Арман братишка, не нервничай, пожалуйста!'];if(phrases[i])speakRussian(phrases[i])}
+function testJoke(i){const phrases=['Мешок рыжая паскуда сейчас вылетит и поедет домой','Андрюха, ну покер реально же хуйня, скажи?','Ходи уже, заебал!','Хватит отдавать Мушегу деньги, вы че угораете','Арман братишка, не нервничай, пожалуйста!'];if(phrases[i])speakRussian(phrases[i])}
 function maybeWarnDecision(remaining){
  const x=t();if(!x||x.id!==decisionOwner||decisionVoiceDone||x.decisionVoice===false)return;
  const threshold=Math.min(10,Math.max(0,Number(x.decisionWarnAt??5)));
